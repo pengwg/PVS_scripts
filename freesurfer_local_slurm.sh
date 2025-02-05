@@ -1,22 +1,22 @@
 #!/bin/bash
 
-#SBATCH --array=91-140%30  
+#SBATCH --array=0-8  
 #SBATCH --partition=defq
 #SBATCH --ntasks=1                   
-#SBATCH --cpus-per-task=10            
+#SBATCH --cpus-per-task=20       
 
-FILE_PATH=/home/pw0032/PVS_nii
+DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data/PVS_nii
 
-mapfile -t FILES_NUM < file_numbers.txt
+mapfile -t FILES_NUM < /home/pw0032/scripts/file_numbers.txt
 
-TASK_ID=$(printf "%03d" $SLURM_ARRAY_TASK_ID)
-# TASK_ID=${FILES_NUM[$SLURM_ARRAY_TASK_ID]}
+# FILE_ID=$(printf "%03d" $SLURM_ARRAY_TASK_ID)
+FILE_ID=$(echo "${FILES_NUM[$SLURM_ARRAY_TASK_ID]}" | xargs)
 
-T1_VOL=PVS_${TASK_ID}_T1_RAGE_SAG.nii.gz
-T2_VOL=PVS_${TASK_ID}_T2_SPACE_AX.nii.gz
-FLAIR_VOL=PVS_${TASK_ID}_T2_SPACE_FLAIR_AX.nii.gz
+T1_VOL=$(find $DATA_PATH/ -type f -name "PVS_${FILE_ID}_T1_RAGE_*.nii.gz" | head -n 1)
+T2_VOL=$(find $DATA_PATH/ -type f \( -name "PVS_${FILE_ID}_T2_SPACE_AX*" -o -name "PVS_${FILE_ID}_T2_SPACE_SAG*" \) | head -n 1)
 
-# srun recon-all -all -hires -parallel -openmp 10 -i "$FILE_PATH/$T1_VOL" -s PVS_$TASK_ID
+echo "recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -s PVS_$FILE_ID"
+srun recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -s PVS_$FILE_ID
 
 # Rerun with T2
-srun recon-all -all -hires -parallel -openmp 10 -T2 "$FILE_PATH/$T2_VOL" -s PVS_$TASK_ID
+# srun recon-all -all -hires -parallel -cw256 -openmp 20 -T2 $T2_VOL -s PVS_$FILE_ID
