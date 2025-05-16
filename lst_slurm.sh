@@ -4,7 +4,7 @@
 #SBATCH --ntasks=1                   
 #SBATCH --cpus-per-task=40            
 #SBATCH --partition=gpu
-#SBATCH --gpus=2
+#SBATCH --gpus=1
 
 DATA_PATH=/home/pw0032/PVS_nii
 
