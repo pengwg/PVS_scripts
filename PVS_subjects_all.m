@@ -5,7 +5,7 @@ if isempty(p)
     parpool(12);
 end
 
-parfor n = 33 : 33
+parfor n = 1 : 140
     PVS_subject(n)
 end
 
@@ -50,7 +50,6 @@ T2_vol = niftiread(info);
 [J,Scale,Vx,Vy,Vz] = FrangiFilter3D(T2_vol, Options);
 
 niftiwrite(J, [out_path '/' subject '_vesselness'], info, 'Compressed',true)
-% niftiwrite(Scale, [out_path '/' subject '_ScaleC60'], info, 'Compressed',true)
 % J = niftiread([out_path '/' subject '_vesselness.nii.gz']);
 vessels = J;
 
@@ -67,6 +66,66 @@ threshold = 5e-3;
 vessels(vessels < threshold) = 0;
 vessels(vessels >= threshold) = 1;
 
-niftiwrite(vessels, [out_path '/' subject '_PVS_wmbg'], info, 'Compressed',true)
+% niftiwrite(vessels, [out_path '/' subject '_mask_wmbg'], info, 'Compressed',true)
+
+%%
+wm_mask = ismember(seg_vol, [2, 41]);
+wm_mask(ventricals | hippocampus) = 0;
+
+vessels = J;
+vessels(~wm_mask) = 0;
+threshold = 5e-3;
+vessels(vessels < threshold) = 0;
+vessels(vessels >= threshold) = 1;
+
+niftiwrite(vessels, [out_path '/' subject '_mask_wm'], info, 'Compressed',true)
+
+%%
+caudate_mask = ismember(seg_vol, [11, 50]);
+caudate_mask(ventricals | hippocampus) = 0;
+
+vessels = J;
+vessels(~caudate_mask) = 0;
+threshold = 5e-3;
+vessels(vessels < threshold) = 0;
+vessels(vessels >= threshold) = 1;
+
+niftiwrite(vessels, [out_path '/' subject '_mask_caudate'], info, 'Compressed',true)
+
+%%
+putamen_mask = ismember(seg_vol, [12, 51]);
+putamen_mask(ventricals | hippocampus) = 0;
+
+vessels = J;
+vessels(~putamen_mask) = 0;
+threshold = 5e-3;
+vessels(vessels < threshold) = 0;
+vessels(vessels >= threshold) = 1;
+
+niftiwrite(vessels, [out_path '/' subject '_mask_putamen'], info, 'Compressed',true)
+
+%%
+pallidum_mask = ismember(seg_vol, [13, 52]);
+pallidum_mask(ventricals | hippocampus) = 0;
+
+vessels = J;
+vessels(~pallidum_mask) = 0;
+threshold = 5e-3;
+vessels(vessels < threshold) = 0;
+vessels(vessels >= threshold) = 1;
+
+niftiwrite(vessels, [out_path '/' subject '_mask_pallidum'], info, 'Compressed',true)
+
+%%
+accumbens_mask = ismember(seg_vol, [26, 58]);
+accumbens_mask(ventricals | hippocampus) = 0;
+
+vessels = J;
+vessels(~accumbens_mask) = 0;
+threshold = 5e-3;
+vessels(vessels < threshold) = 0;
+vessels(vessels >= threshold) = 1;
+
+niftiwrite(vessels, [out_path '/' subject '_mask_accumbens'], info, 'Compressed',true)
 
 end
