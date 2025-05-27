@@ -3,19 +3,18 @@ clear
 addpath('matlab_auxiliary/')
 
 PVS_measure_region('wmbg')
+PVS_measure_region('nawmbg')
 PVS_measure_region('wm')
-PVS_measure_region('caudate')
-PVS_measure_region('putamen')
-PVS_measure_region('pallidum')
-PVS_measure_region('accumbens')
+PVS_measure_region('nawm')
+PVS_measure_region('bg')
 
 return
 
 
 function PVS_measure_region(region)
 
-data_path = '/tm/Data/vesselmask';
-FS_path = '/tm/Data/FS_PVS';
+data_path = '/projects/2024-11_Perivascular_Space/batch1_output/PVS_vessel';
+FS_path = '/projects/2024-11_Perivascular_Space/batch1_output/FS';
 
 stats = zeros(140, 15);
 number = zeros(140, 1);
@@ -39,9 +38,11 @@ parfor n = 1 : 140
 
     brain_fs = sprintf('%s/PVS_%03d/mri/brainmask.mgz', FS_path, n);
     brain_nii = sprintf('%s/PVS_%03d/mri/brainmask.nii.gz', FS_path, n);
-    if exist(brain_nii, 'file') ~= 2
+    disp(brain_nii)
+    
+    % if exist(brain_nii, 'file') ~= 2
         system(['mri_convert ' brain_fs ' ' brain_nii]);
-    end
+    % end
     info = niftiinfo(brain_nii);
     brain = niftiread(info);
     brainVol(n) = nnz(brain > 0) * prod(info.PixelDimensions);
@@ -62,7 +63,7 @@ parfor n = 1 : 140
     volume = measure_all(:, 3);
     pvsTotalVol(n) = sum(volume);
 
-    writetable(table(length, width, volume), sprintf('../output/PVS_%03d_%s_measurement.xlsx', n, region));
+    writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_measurement.xlsx', n, region));
 end
 
 lengthMean = stats(:, 1);
@@ -88,6 +89,6 @@ T = table(subjectID, brainVol, pvsTotalVol, number, lengthMean, lengthMedian, le
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
 
-writetable(T, ['../output/PVS_stats_' region, '.xlsx'])
+writetable(T, ['PVS1_stats_' region, '.xlsx'])
 
 end
