@@ -17,9 +17,12 @@ function PVS_subject(id)
 
 addpath('filters/frangi_filter_version2a/')
 
-data_path = '/projects/2024-11_Perivascular_Space/batch1_output/FS';
-out_path = '/projects/2024-11_Perivascular_Space/batch1_output/PVS_vessel';
-lst_path = '/projects/2024-11_Perivascular_Space/batch1_output/LST';
+% data_path = '/projects/2024-11_Perivascular_Space/batch1_output';
+data_path = '/tm/Data';
+
+FS_path = [data_path '/FS'];
+out_path = [data_path '/PVS_vessel'];
+lst_path = [data_path '/LST'];
 
 Options.BlackWhite = false;
 Options.FrangiScaleRange = [0.5 4];
@@ -28,10 +31,10 @@ Options.FrangiC = 60;
 threshold = 5e-3;
 
 subject = sprintf('PVS_%03d', id);
-T2_fs = [data_path '/' subject '/mri/T2.prenorm.mgz'];
-T2_nii = [data_path '/' subject '/mri/T2.prenorm.nii'];
-seg_fs = [data_path '/' subject '/mri/aparc+aseg.mgz'];
-seg_nii = [data_path '/' subject '/mri/aparc+aseg.nii'];
+T2_fs = [FS_path '/' subject '/mri/T2.prenorm.mgz'];
+T2_nii = [FS_path '/' subject '/mri/T2.prenorm.nii'];
+seg_fs = [FS_path '/' subject '/mri/aparc+aseg.mgz'];
+seg_nii = [FS_path '/' subject '/mri/aparc+aseg.nii'];
 
 if exist(T2_fs, 'file') ~= 2
     return
