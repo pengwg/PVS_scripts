@@ -18,6 +18,7 @@ return
 
 function PVS_measure_region(region, PVS_path, FS_path)
 
+ar_threshold = 1.5;
 
 stats = zeros(140, 15);
 number = zeros(140, 1);
@@ -29,6 +30,7 @@ if isempty(p)
     parpool(6);
 end
 
+parfor n = 1 : 140
     subject = sprintf('PVS_%03d_vsmask_%s.nii.gz', n, region);
     mask_file = [PVS_path '/' subject];
 
@@ -52,7 +54,10 @@ end
     info = niftiinfo(mask_file);
     mask_vol = niftiread(info);
 
-    [stats_subject, measure_all] = measurePVSstats(mask_vol, info.PixelDimensions);
+    filtered_vol = threashold_PVS_ar(mask_vol, ar_threshold);
+    niftiwrite(filtered_vol, sprintf('%s/PVS_%03d_vsmask_%s_noblob', PVS_path, n, region), info, 'Compressed', true);
+
+    [stats_subject, measure_all] = measurePVSstats(filtered_vol, info.PixelDimensions);
     stats(n, :) = stats_subject';
     number(n) = size(measure_all, 1);
     
@@ -65,7 +70,8 @@ end
     volume = measure_all(:, 3);
     pvsTotalVol(n) = sum(volume);
 
-    writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_measurement.xlsx', n, region));
+    writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_noblob.xlsx', n, region));
+
 end
 
 lengthMean = stats(:, 1);
@@ -91,6 +97,19 @@ T = table(subjectID, brainVol, pvsTotalVol, number, lengthMean, lengthMedian, le
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
 
-writetable(T, ['PVS1_stats_' region, '.xlsx'])
+writetable(T, ['PVS1_stats_' region, '_noblob.xlsx'])
 
+end
+
+%%
+function out_vol = threashold_PVS_ar(PVS_vol, threshold)
+    PVSstats3 = regionprops3(logical(PVS_vol),"PrincipalAxisLength", "VoxelIdxList", "Volume");
+    ar = PVSstats3.PrincipalAxisLength(:,1) ./ PVSstats3.PrincipalAxisLength(:,2);
+
+    for i = 1 : height(PVSstats3)
+        if ar(i) < threshold || PVSstats3.Volume(i) < 3
+            PVS_vol(PVSstats3.VoxelIdxList{i}) = 0;
+        end
+    end
+    out_vol = PVS_vol;
 end
