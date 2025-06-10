@@ -2,19 +2,22 @@ clear
 
 addpath('matlab_auxiliary/')
 
-PVS_measure_region('wmbg')
-PVS_measure_region('nawmbg')
-PVS_measure_region('wm')
-PVS_measure_region('nawm')
-PVS_measure_region('bg')
+data_path = '/projects/2024-11_Perivascular_Space/batch1_output';
+% data_path = '~/Data';
+PVS_path = [data_path '/PVS_vessel'];
+FS_path = [data_path '/FS'];
+
+PVS_measure_region('wmbg', PVS_path, FS_path)
+PVS_measure_region('nawmbg', PVS_path, FS_path)
+PVS_measure_region('wm', PVS_path, FS_path)
+PVS_measure_region('nawm', PVS_path, FS_path)
+PVS_measure_region('bg', PVS_path, FS_path)
 
 return
 
 
-function PVS_measure_region(region)
+function PVS_measure_region(region, PVS_path, FS_path)
 
-data_path = '/projects/2024-11_Perivascular_Space/batch1_output/PVS_vessel';
-FS_path = '/projects/2024-11_Perivascular_Space/batch1_output/FS';
 
 stats = zeros(140, 15);
 number = zeros(140, 1);
@@ -26,9 +29,8 @@ if isempty(p)
     parpool(6);
 end
 
-parfor n = 1 : 140
     subject = sprintf('PVS_%03d_vsmask_%s.nii.gz', n, region);
-    mask_file = [data_path '/' subject];
+    mask_file = [PVS_path '/' subject];
 
     if exist(mask_file, 'file') ~= 2
         continue
@@ -40,9 +42,9 @@ parfor n = 1 : 140
     brain_nii = sprintf('%s/PVS_%03d/mri/brainmask.nii.gz', FS_path, n);
     disp(brain_nii)
     
-    % if exist(brain_nii, 'file') ~= 2
+    if exist(brain_nii, 'file') ~= 2
         system(['mri_convert ' brain_fs ' ' brain_nii]);
-    % end
+    end
     info = niftiinfo(brain_nii);
     brain = niftiread(info);
     brainVol(n) = nnz(brain > 0) * prod(info.PixelDimensions);
