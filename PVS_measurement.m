@@ -6,17 +6,18 @@ data_path = '/projects/2024-11_Perivascular_Space/batch1_output';
 % data_path = '~/Data';
 PVS_path = [data_path '/PVS_vessel'];
 FS_path = [data_path '/FS'];
+LST_path = [data_path '/LST'];
 
-PVS_measure_region('wmbg', PVS_path, FS_path)
-PVS_measure_region('nawmbg', PVS_path, FS_path)
-PVS_measure_region('wm', PVS_path, FS_path)
-PVS_measure_region('nawm', PVS_path, FS_path)
-PVS_measure_region('bg', PVS_path, FS_path)
+PVS_measure_region('wmbg', PVS_path, FS_path, LST_path)
+PVS_measure_region('nawmbg', PVS_path, FS_path, LST_path)
+PVS_measure_region('wm', PVS_path, FS_path, LST_path)
+PVS_measure_region('nawm', PVS_path, FS_path, LST_path)
+PVS_measure_region('bg', PVS_path, FS_path, LST_path)
 
 return
 
 
-function PVS_measure_region(region, PVS_path, FS_path)
+function PVS_measure_region(region, PVS_path, FS_path, LST_path)
 
 ar_threshold = 1.5;
 
@@ -24,6 +25,8 @@ stats = zeros(140, 15);
 number = zeros(140, 1);
 pvsTotalVol = zeros(140, 1);
 brainVol = zeros(140, 1);
+bgVol = zeros(140, 1);
+nawmVol = zeros(140, 1);
 
 p = gcp('nocreate');
 if isempty(p)
@@ -42,15 +45,30 @@ parfor n = 1 : 140
 
     brain_fs = sprintf('%s/PVS_%03d/mri/brainmask.mgz', FS_path, n);
     brain_nii = sprintf('%s/PVS_%03d/mri/brainmask.nii.gz', FS_path, n);
-    disp(brain_nii)
+    aseg_fs = sprintf('%s/PVS_%03d/mri/aseg.mgz', FS_path, n);
+    aseg_nii = sprintf('%s/PVS_%03d/mri/aseg.nii.gz', FS_path, n);
+    % disp(brain_nii)
     
     if exist(brain_nii, 'file') ~= 2
         system(['mri_convert ' brain_fs ' ' brain_nii]);
     end
+
+    if exist(aseg_nii, 'file') ~= 2
+        system(['mri_convert ' aseg_fs ' ' aseg_nii]);
+    end
+
     info = niftiinfo(brain_nii);
     brain = niftiread(info);
     brainVol(n) = nnz(brain > 0) * prod(info.PixelDimensions);
 
+    aseg_vol = niftiread(aseg_nii);
+    bgVol(n) = nnz(ismember(aseg_vol, [11, 12, 13, 26, 50, 51, 52, 58])) * prod(info.PixelDimensions);
+    
+	wmh = niftiread(sprintf('%s/PVS_%03d/space-flair_seg-lst.nii.gz', LST_path, n));
+	wm_mask = ismember(aseg_vol, [2, 41]);
+	wm_mask(logical(wmh)) = 0;
+	nawmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
+	
     info = niftiinfo(mask_file);
     mask_vol = niftiread(info);
 
@@ -93,7 +111,7 @@ sizePrc25 = stats(:, 14);
 sizePrc75 = stats(:, 15);
 subjectID = (1 : 140)';
 
-T = table(subjectID, brainVol, pvsTotalVol, number, lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
+T = table(subjectID, brainVol, bgVol, nawmVol, pvsTotalVol, number, lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
 
