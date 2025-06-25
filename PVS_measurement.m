@@ -27,6 +27,7 @@ pvsTotalVol = zeros(140, 1);
 maskVol = zeros(140, 1);
 eTIV = zeros(140, 1);
 bgVol = zeros(140, 1);
+wmVol = zeros(140, 1);
 nawmVol = zeros(140, 1);
 
 p = gcp('nocreate');
@@ -69,6 +70,7 @@ parfor n = 1 : 140
     
 	wmh = niftiread(sprintf('%s/PVS_%03d/space-flair_seg-lst.nii.gz', LST_path, n));
 	wm_mask = ismember(aseg_vol, [2, 41]);
+    wmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
 	wm_mask(logical(wmh)) = 0;
 	nawmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
 	
@@ -114,7 +116,7 @@ sizePrc25 = stats(:, 14);
 sizePrc75 = stats(:, 15);
 subjectID = (1 : 140)';
 
-T = table(subjectID, eTIV, maskVol, bgVol, nawmVol, pvsTotalVol, number, lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
+T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
 
