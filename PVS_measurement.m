@@ -2,9 +2,8 @@ clear
 
 addpath('matlab_auxiliary/')
 
-data_path = '/projects/2024-11_Perivascular_Space/batch1_output';
-% data_path = '~/Data';
-PVS_path = [data_path '/PVS_vessel'];
+data_path = '~/Data/PVS_B1_Analysis';
+PVS_path = [data_path '/Frangi'];
 FS_path = [data_path '/FS'];
 LST_path = [data_path '/LST'];
 
@@ -35,7 +34,7 @@ if isempty(p)
     parpool(6);
 end
 
-parfor n = 1 : 140
+for n = 1 : 140
     subject = sprintf('PVS_%03d_vsmask_%s.nii.gz', n, region);
     mask_file = [PVS_path '/' subject];
 
