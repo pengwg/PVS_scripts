@@ -2,7 +2,7 @@ clear
 
 addpath('matlab_auxiliary/')
 
-data_path = '~/Data/PVS_B1_Analysis';
+data_path = '~/Data/PVS_B2_Analysis';
 PVS_path = [data_path '/Frangi'];
 FS_path = [data_path '/FS'];
 LST_path = [data_path '/LST'];
@@ -34,8 +34,8 @@ if isempty(p)
     parpool(6);
 end
 
-for n = 1 : 140
-    subject = sprintf('PVS_%03d_vsmask_%s.nii.gz', n, region);
+parfor n = 1 : 54
+    subject = sprintf('PVS_2_%03d_vsmask_%s.nii.gz', n, region);
     mask_file = [PVS_path '/' subject];
 
     if exist(mask_file, 'file') ~= 2
@@ -44,11 +44,11 @@ for n = 1 : 140
 
     disp(['Measure ' subject '...' ])
 
-    brain_fs = sprintf('%s/PVS_%03d/mri/brainmask.mgz', FS_path, n);
-    brain_nii = sprintf('%s/PVS_%03d/mri/brainmask.nii.gz', FS_path, n);
-    aseg_fs = sprintf('%s/PVS_%03d/mri/aseg.mgz', FS_path, n);
-    aseg_nii = sprintf('%s/PVS_%03d/mri/aseg.nii.gz', FS_path, n);
-    aseg_stats = sprintf('%s/PVS_%03d/stats/aseg.stats', FS_path, n);
+    brain_fs = sprintf('%s/PVS_2_%03d/mri/brainmask.mgz', FS_path, n);
+    brain_nii = sprintf('%s/PVS_2_%03d/mri/brainmask.nii.gz', FS_path, n);
+    aseg_fs = sprintf('%s/PVS_2_%03d/mri/aseg.mgz', FS_path, n);
+    aseg_nii = sprintf('%s/PVS_2_%03d/mri/aseg.nii.gz', FS_path, n);
+    aseg_stats = sprintf('%s/PVS_2_%03d/stats/aseg.stats', FS_path, n);
     % disp(brain_nii)
     
     if exist(brain_nii, 'file') ~= 2
@@ -67,7 +67,7 @@ for n = 1 : 140
     aseg_vol = niftiread(aseg_nii);
     bgVol(n) = nnz(ismember(aseg_vol, [11, 12, 13, 26, 50, 51, 52, 58])) * prod(info.PixelDimensions);
     
-	wmh = niftiread(sprintf('%s/PVS_%03d/space-flair_seg-lst.nii.gz', LST_path, n));
+	wmh = niftiread(sprintf('%s/PVS_2_%03d/space-flair_seg-lst.nii.gz', LST_path, n));
 	wm_mask = ismember(aseg_vol, [2, 41]);
     wmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
 	wm_mask(logical(wmh)) = 0;
@@ -77,7 +77,7 @@ for n = 1 : 140
     mask_vol = niftiread(info);
 
     filtered_vol = threashold_PVS_ar(mask_vol, ar_threshold);
-    niftiwrite(filtered_vol, sprintf('%s/PVS_%03d_vsmask_%s_noblob', PVS_path, n, region), info, 'Compressed', true);
+    niftiwrite(filtered_vol, sprintf('%s/PVS_2_%03d_vsmask_%s_noblob', PVS_path, n, region), info, 'Compressed', true);
 
     [stats_subject, measure_all] = measurePVSstats(filtered_vol, info.PixelDimensions);
     stats(n, :) = stats_subject';
@@ -92,7 +92,7 @@ for n = 1 : 140
     volume = measure_all(:, 3);
     pvsTotalVol(n) = sum(volume);
 
-    writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_noblob.xlsx', n, region));
+    writetable(table(length, width, volume), sprintf('subjects_stats/PVS2_%03d_%s_noblob.xlsx', n, region));
 
 end
 
@@ -119,7 +119,7 @@ T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, 
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
 
-writetable(T, ['PVS1_stats_' region, '_noblob.xlsx'])
+writetable(T, ['PVS2_stats_' region, '_noblob.xlsx'])
 
 end
 
