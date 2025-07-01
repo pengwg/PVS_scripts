@@ -13,10 +13,20 @@ PVS_measure_region('wm', PVS_path, FS_path, LST_path)
 PVS_measure_region('nawm', PVS_path, FS_path, LST_path)
 PVS_measure_region('bg', PVS_path, FS_path, LST_path)
 
+PVS_measure_region('wmbg', PVS_path, FS_path, LST_path, true)
+PVS_measure_region('nawmbg', PVS_path, FS_path, LST_path, true)
+PVS_measure_region('wm', PVS_path, FS_path, LST_path, true)
+PVS_measure_region('nawm', PVS_path, FS_path, LST_path, true)
+PVS_measure_region('bg', PVS_path, FS_path, LST_path, true)
+
 return
 
 
-function PVS_measure_region(region, PVS_path, FS_path, LST_path)
+function PVS_measure_region(region, PVS_path, FS_path, LST_path, noblob)
+
+if nargin < 5
+    noblob = false;
+end
 
 ar_threshold = 1.5;
 
@@ -75,11 +85,15 @@ parfor n = 1 : 54
 	
     info = niftiinfo(mask_file);
     mask_vol = niftiread(info);
+    
+    if noblob
+        filtered_vol = threashold_PVS_ar(mask_vol, ar_threshold);
+        niftiwrite(filtered_vol, sprintf('%s/PVS_%03d_vsmask_%s_noblob', PVS_path, n, region), info, 'Compressed', true);
+        [stats_subject, measure_all] = measurePVSstats(filtered_vol, info.PixelDimensions);
+    else
+        [stats_subject, measure_all] = measurePVSstats(mask_vol, info.PixelDimensions);
+    end
 
-    filtered_vol = threashold_PVS_ar(mask_vol, ar_threshold);
-    niftiwrite(filtered_vol, sprintf('%s/PVS_2_%03d_vsmask_%s_noblob', PVS_path, n, region), info, 'Compressed', true);
-
-    [stats_subject, measure_all] = measurePVSstats(filtered_vol, info.PixelDimensions);
     stats(n, :) = stats_subject';
     number(n) = size(measure_all, 1);
     
@@ -92,7 +106,11 @@ parfor n = 1 : 54
     volume = measure_all(:, 3);
     pvsTotalVol(n) = sum(volume);
 
-    writetable(table(length, width, volume), sprintf('subjects_stats/PVS2_%03d_%s_noblob.xlsx', n, region));
+    if noblob
+        writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_noblob.xlsx', n, region));
+    else
+        writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s.xlsx', n, region));
+    end
 
 end
 
@@ -118,8 +136,11 @@ subjectID = (1 : 140)';
 T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
-
-writetable(T, ['PVS2_stats_' region, '_noblob.xlsx'])
+if noblob
+    writetable(T, ['PVS1_stats_' region, '_noblob.xlsx'])
+else
+    writetable(T, ['PVS1_stats_' region, '.xlsx'])
+end
 
 end
 
