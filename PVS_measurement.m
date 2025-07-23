@@ -107,9 +107,9 @@ parfor n = 1 : 54
     pvsTotalVol(n) = sum(volume);
 
     if noblob
-        writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_noblob.xlsx', n, region));
+        writetable(table(length, width, volume), sprintf('subjects_stats/PVS2_%03d_%s_noblob.xlsx', n, region));
     else
-        writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s.xlsx', n, region));
+        writetable(table(length, width, volume), sprintf('subjects_stats/PVS2_%03d_%s.xlsx', n, region));
     end
 
 end
@@ -137,9 +137,9 @@ T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, 
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
 if noblob
-    writetable(T, ['PVS1_stats_' region, '_noblob.xlsx'])
+    writetable(T, ['PVS2_stats_' region, '_noblob.xlsx'])
 else
-    writetable(T, ['PVS1_stats_' region, '.xlsx'])
+    writetable(T, ['PVS2_stats_' region, '.xlsx'])
 end
 
 end
