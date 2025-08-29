@@ -5,4 +5,4 @@
 #SBATCH --cpus-per-task=12
 
 matlab -batch "PVS_subjects_all"
-
+matlab -batch "PVS_measurement"

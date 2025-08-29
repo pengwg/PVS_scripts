@@ -2,7 +2,9 @@ clear
 
 addpath('matlab_auxiliary/')
 
-data_path = '~/Data/PVS_B1_Analysis';
+data_path = '/projects/2024-11_Perivascular_Space/PVS_B1_Analysis';
+% data_path = '/tm/Data/PVS';
+
 PVS_path = [data_path '/Frangi'];
 FS_path = [data_path '/FS'];
 LST_path = [data_path '/LST'];
@@ -13,42 +15,35 @@ PVS_measure_region('wm', PVS_path, FS_path, LST_path)
 PVS_measure_region('nawm', PVS_path, FS_path, LST_path)
 PVS_measure_region('bg', PVS_path, FS_path, LST_path)
 
-PVS_measure_region('wmbg', PVS_path, FS_path, LST_path, true)
-PVS_measure_region('nawmbg', PVS_path, FS_path, LST_path, true)
-PVS_measure_region('wm', PVS_path, FS_path, LST_path, true)
-PVS_measure_region('nawm', PVS_path, FS_path, LST_path, true)
-PVS_measure_region('bg', PVS_path, FS_path, LST_path, true)
-
 return
 
 
-function PVS_measure_region(region, PVS_path, FS_path, LST_path, noblob)
+function PVS_measure_region(region, PVS_path, FS_path, LST_path)
 
-if nargin < 5
-    noblob = false;
-end
+numSubjects = 140;
 
-ar_threshold = 1.5;
+stats = zeros(numSubjects, 15);
+number = zeros(numSubjects, 1);
+pvsTotalVol = zeros(numSubjects, 1);
+maskVol = zeros(numSubjects, 1);
+eTIV = zeros(numSubjects, 1);
+bgVol = zeros(numSubjects, 1);
+wmVol = zeros(numSubjects, 1);
+nawmVol = zeros(numSubjects, 1);
 
-stats = zeros(140, 15);
-number = zeros(140, 1);
-pvsTotalVol = zeros(140, 1);
-maskVol = zeros(140, 1);
-eTIV = zeros(140, 1);
-bgVol = zeros(140, 1);
-wmVol = zeros(140, 1);
-nawmVol = zeros(140, 1);
+pvsTotalVolGT100 = zeros(numSubjects, 1);
+numPVSTotalVolGT100 = zeros(numSubjects, 1);
 
 p = gcp('nocreate');
 if isempty(p)
-    parpool(6);
+    parpool(12);
 end
 
 parfor n = 1 : 140
     subject = sprintf('PVS_%03d_vsmask_%s.nii.gz', n, region);
-    mask_file = [PVS_path '/' subject];
+    pvs_mask_file = [PVS_path '/' subject];
 
-    if exist(mask_file, 'file') ~= 2
+    if exist(pvs_mask_file, 'file') ~= 2
         continue
     end
 
@@ -83,17 +78,10 @@ parfor n = 1 : 140
 	wm_mask(logical(wmh)) = 0;
 	nawmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
 	
-    info = niftiinfo(mask_file);
-    mask_vol = niftiread(info);
+    info = niftiinfo(pvs_mask_file);
+    pvs_mask_vol = niftiread(info);
     
-    if noblob
-        filtered_vol = threashold_PVS_ar(mask_vol, ar_threshold);
-        niftiwrite(filtered_vol, sprintf('%s/PVS_%03d_vsmask_%s_noblob', PVS_path, n, region), info, 'Compressed', true);
-
-        [stats_subject, measure_all] = measurePVSstats(filtered_vol, info.PixelDimensions);
-    else
-        [stats_subject, measure_all] = measurePVSstats(mask_vol, info.PixelDimensions);
-    end
+    [stats_subject, measure_all] = measurePVSstats(pvs_mask_vol, info.PixelDimensions);
 
     stats(n, :) = stats_subject';
     number(n) = size(measure_all, 1);
@@ -107,12 +95,10 @@ parfor n = 1 : 140
     volume = measure_all(:, 3);
     pvsTotalVol(n) = sum(volume);
 
-    if noblob
-        writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s_noblob.xlsx', n, region));
-    else
-        writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s.xlsx', n, region));
-    end
+    pvsTotalVolGT100(n) = sum(volume(volume>100));
+    numPVSTotalVolGT100(n) = sum(volume>100);
 
+    writetable(table(length, width, volume), sprintf('subjects_stats/PVS1_%03d_%s.xlsx', n, region));
 end
 
 lengthMean = stats(:, 1);
@@ -127,36 +113,20 @@ widthStd = stats(:, 8);
 widthPrc25 = stats(:, 9);
 widthPrc75 = stats(:, 10);
 
-sizeMean = stats(:, 11);
-sizeMedian = stats(:, 12);
-sizeStd = stats(:, 13);
-sizePrc25 = stats(:, 14);
-sizePrc75 = stats(:, 15);
+volMean = stats(:, 11);
+volMedian = stats(:, 12);
+volStd = stats(:, 13);
+volPrc25 = stats(:, 14);
+volPrc75 = stats(:, 15);
 subjectID = (1 : 140)';
 
-T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
+T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, pvsTotalVolGT100, numPVSTotalVolGT100, ...
+          lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
-          sizeMean, sizeMedian, sizeStd, sizePrc25, sizePrc75);
-if noblob
-    writetable(T, ['PVS1_stats_' region, '_noblob.xlsx'])
-else
-    writetable(T, ['PVS1_stats_' region, '.xlsx'])
-end
+          volMean, volMedian, volStd, volPrc25, volPrc75);
 
+writetable(T, ['PVS1_stats_' region, '.xlsx'])
 
-end
-
-%%
-function out_vol = threashold_PVS_ar(PVS_vol, threshold)
-    PVSstats3 = regionprops3(logical(PVS_vol),"PrincipalAxisLength", "VoxelIdxList", "Volume");
-    ar = PVSstats3.PrincipalAxisLength(:,1) ./ PVSstats3.PrincipalAxisLength(:,2);
-
-    for i = 1 : height(PVSstats3)
-        if ar(i) < threshold || PVSstats3.Volume(i) < 3
-            PVS_vol(PVSstats3.VoxelIdxList{i}) = 0;
-        end
-    end
-    out_vol = PVS_vol;
 end
 
 %%
@@ -181,4 +151,5 @@ fclose(fid);
 % disp(['eTIV = ', num2str(eTIV), ' mm^3']);
 
 end
+
 
