@@ -1,11 +1,12 @@
 #!/bin/bash
 
-#SBATCH --array=0-8  
+#SBATCH --array=1-54%8
 #SBATCH --partition=defq
 #SBATCH --ntasks=1                   
 #SBATCH --cpus-per-task=20       
 
-DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data/PVS_nii
+DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data1
+export SUBJECTS_DIR=/projects/2024-11_Perivascular_Space/PVS_B2_Analysis/FS
 
 FILE_ID=$(printf "%03d" $SLURM_ARRAY_TASK_ID)
 

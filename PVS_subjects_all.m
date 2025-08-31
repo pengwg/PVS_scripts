@@ -5,7 +5,7 @@ if isempty(p)
     parpool(12);
 end
 
-parfor n = 1 : 140
+parfor n = 1 : 54
     PVS_subject(n)
 end
 
@@ -16,20 +16,21 @@ return
 function PVS_subject(id)
 
 addpath('filters/frangi_filter_version2a/')
+addpath('matlab_auxiliary/')
 
-data_path = '/tm/Data/PVS';
+data_path = '/projects/2024-11_Perivascular_Space/PVS_B2_Analysis';
 
 FS_path = [data_path '/FS'];
-out_path = [data_path '/Frangi'];
+out_path = [data_path '/Frangi_pruned'];
 lst_path = [data_path '/LST'];
 
 Options.BlackWhite = false;
-Options.FrangiScaleRange = [0.5 4];
+Options.FrangiScaleRange = [0.5 3.5];
 Options.FrangiScaleRatio = 0.5;
 Options.FrangiC = 60;
-threshold = 5e-3;
+threshold = 7e-3;
 
-subject = sprintf('PVS_%03d', id);
+subject = sprintf('PVS_2_%03d', id);
 T2_fs = [FS_path '/' subject '/mri/T2.prenorm.mgz'];
 T2_nii = [FS_path '/' subject '/mri/T2.prenorm.nii'];
 seg_fs = [FS_path '/' subject '/mri/aparc+aseg.mgz'];
@@ -47,19 +48,18 @@ if exist(seg_nii, 'file') ~= 2
     system(['mri_convert ' seg_fs ' ' seg_nii]);
 end
 
-disp(['Measure  ' subject '...' ])
+disp(['Frangi filter  ' subject '...' ])
 
 info = niftiinfo(T2_nii);
-out_name = [out_path '/' subject '_vesselness_C200'];
+T2_vol = niftiread(info);
+
+out_name = [out_path '/' subject '_vesselness'];
 
 if exist([out_name, '.nii.gz'], 'file') == 2
     vessleness = niftiread([out_name, '.nii.gz']);
 else
-    T2_vol = niftiread(info);
     [vessleness,Scale,~,~,~] = FrangiFilter3D(T2_vol, Options);
-
     niftiwrite(vessleness, out_name, info, 'Compressed',true)
-    % niftiwrite(Scale, [out_path '/' subject '_ScaleC60'], info, 'Compressed',true)
 end
 
 wmh = niftiread([lst_path '/' subject '/space-flair_seg-lst.nii.gz']);
@@ -72,39 +72,31 @@ ventricals = imdilate(ventricals, strel('sphere', 5));
 wmbg_mask = ismember(seg_vol, [2, 41, 11, 12, 13, 26, 50, 51, 52, 58]);
 wmbg_mask(ventricals) = 0;
 
+disp(['Segment  ' subject '...' ])
+
 [vesselness_wmbg, vesselmap_wmbg] = vessel_region_threshold(vessleness, wmbg_mask, threshold);
 niftiwrite(vesselness_wmbg, [out_path '/' subject '_vesselness_wmbg'], info, 'Compressed',true)
-niftiwrite(vesselmap_wmbg, [out_path '/' subject '_vsmask_wmbg'], info, 'Compressed',true)
+niftiwrite(vesselmap_wmbg, [out_path '/' subject '_vsmask_wmbg_preseg'], info, 'Compressed',true)
 
-vesselmap_nawmbg = vesselmap_wmbg;
+vesselmap_wmbg_seg = PVS_segment(vesselmap_wmbg, T2_vol);
+niftiwrite(vesselmap_wmbg_seg, [out_path '/' subject '_vsmask_wmbg'], info, 'Compressed',true)
+
+vesselmap_nawmbg = vesselmap_wmbg_seg;
 vesselmap_nawmbg(logical(wmh)) = 0;
 niftiwrite(vesselmap_nawmbg, [out_path '/' subject '_vsmask_nawmbg'], info, 'Compressed',true)
 
 wm_mask = ismember(seg_vol, [2, 41]);
 
-vesselmap_wm = vesselmap_wmbg;
+vesselmap_wm = vesselmap_wmbg_seg;
 vesselmap_wm(~logical(wm_mask)) = 0;
 niftiwrite(vesselmap_wm, [out_path '/' subject '_vsmask_wm'], info, 'Compressed',true)
 
 vesselmap_wm(logical(wmh)) = 0;
 niftiwrite(vesselmap_wm, [out_path '/' subject '_vsmask_nawm'], info, 'Compressed',true)
 
-vesselmap_bg = vesselmap_wmbg;
+vesselmap_bg = vesselmap_wmbg_seg;
 vesselmap_bg(logical(wm_mask)) = 0;
 niftiwrite(vesselmap_bg, [out_path '/' subject '_vsmask_bg'], info, 'Compressed',true)
-
-
-% caudate_mask = ismember(seg_vol, [11, 50]);
-% caudate_mask(ventricals) = 0;
-% 
-% putamen_mask = ismember(seg_vol, [12, 51]);
-% putamen_mask(ventricals) = 0;
-% 
-% pallidum_mask = ismember(seg_vol, [13, 52]);
-% pallidum_mask(ventricals) = 0;
-% 
-% accumbens_mask = ismember(seg_vol, [26, 58]);
-% accumbens_mask(ventricals) = 0;
 
 end
 
@@ -118,6 +110,54 @@ vesselness_region(~region_mask) = 0;
 vesselmap_region = vesselness_region;
 vesselmap_region(vesselmap_region < threshold) = 0;
 vesselmap_region(vesselmap_region >= threshold) = 1;
+
+end
+
+%%
+function vesslemap_pruned = PVS_segment(vesslemap, T2)
+
+minVol = 6;
+maxVol = 200;
+
+% -------------------------------------------------------------------
+%  The following was added for separating the clustered PVS in BG
+%--------------------------------------------------------------------
+CC = bwconncomp(logical(vesslemap), 18); % Connected component analysis
+L = labelmatrix(CC); % label objects
+ST = regionprops3(CC, 'Volume', 'BoundingBox', 'VoxelIdxList');
+
+vesslemap_pruned = vesslemap;
+% Find volume within expected size
+SI = size(T2);
+for n = 1 : length(ST.Volume)
+    if ST.Volume(n) <= minVol
+        vesslemap_pruned(ST.VoxelIdxList{n}) = 0;
+
+    elseif ST.Volume(n) > maxVol
+        bbox = ST.BoundingBox(n, :);
+        bbox = round(bbox);
+        bbox(bbox==0) = 1;
+        bbox(4:6) = bbox(4:6) + bbox(1:3) + 1;
+        bbox(1:3) = max(bbox(1:3) - 1, 1);
+        if bbox(4) > SI(2)
+            bbox(4) = SI(2);
+        end
+        if bbox(5) > SI(1)
+            bbox(5) = SI(1);
+        end
+        if bbox(6) > SI(3)
+            bbox(6) = SI(3);
+        end
+        tempVSL2 = L(bbox(2):bbox(5), bbox(1):bbox(4), bbox(3):bbox(6));
+        tempVSL = tempVSL2 == n;
+        tempI = T2(bbox(2):bbox(5), bbox(1):bbox(4), bbox(3):bbox(6));
+        
+        ff = prunePVS(tempVSL,tempI);
+        
+        vesslemap_pruned(bbox(2):bbox(5), bbox(1):bbox(4), bbox(3):bbox(6)) = ...
+            ff + (tempVSL==0 & L(bbox(2):bbox(5), bbox(1):bbox(4), bbox(3):bbox(6)) > 0);
+    end
+end
 
 end
 
