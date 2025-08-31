@@ -14,8 +14,8 @@ T1_VOL=$(find $DATA_PATH/$FILE_ID/ -type f -name "${FILE_ID}_T1_RAGE_*.nii" | he
 T2_VOL=$(find $DATA_PATH/$FILE_ID/ -type f \( -name "${FILE_ID}_T2_SPACE_AX*" -o -name "PVS_${FILE_ID}_T2_SPACE_SAG*" \) | head -n 1)
 
 echo "recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -T2pial -s $FILE_ID"
-#srun recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -T2pial -s $FILE_ID
-srun recon-all -parallel -cw256 -openmp 20 -s $FILE_ID -autorecon2 -autorecon3 -T2pial -no-isrunning
+srun recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -T2pial -s $FILE_ID
+#srun recon-all -parallel -cw256 -openmp 20 -s $FILE_ID -autorecon2 -autorecon3 -T2pial -no-isrunning
 
 # Rerun with T2
 # srun recon-all -all -hires -parallel -cw256 -openmp 20 -T2 $T2_VOL -s PVS_$FILE_ID
