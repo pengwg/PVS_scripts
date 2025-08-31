@@ -5,7 +5,7 @@ addpath('matlab_auxiliary/')
 data_path = '/projects/2024-11_Perivascular_Space/PVS_B1_Analysis';
 % data_path = '/tm/Data/PVS';
 
-PVS_path = [data_path '/Frangi'];
+PVS_path = [data_path '/Frangi_pruned'];
 FS_path = [data_path '/FS'];
 LST_path = [data_path '/LST'];
 
@@ -39,7 +39,7 @@ if isempty(p)
     parpool(12);
 end
 
-parfor n = 1 : 140
+parfor n = 1 : numSubjects
     subject = sprintf('PVS_%03d_vsmask_%s.nii.gz', n, region);
     pvs_mask_file = [PVS_path '/' subject];
 
@@ -118,7 +118,7 @@ volMedian = stats(:, 12);
 volStd = stats(:, 13);
 volPrc25 = stats(:, 14);
 volPrc75 = stats(:, 15);
-subjectID = (1 : 140)';
+subjectID = (1 : numSubjects)';
 
 T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, pvsTotalVolGT100, numPVSTotalVolGT100, ...
           lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
