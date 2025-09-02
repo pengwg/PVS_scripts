@@ -28,7 +28,7 @@ Options.BlackWhite = false;
 Options.FrangiScaleRange = [0.5 3.5];
 Options.FrangiScaleRatio = 0.5;
 Options.FrangiC = 60;
-threshold = 7e-3;
+threshold = 4e-3;
 
 subject = sprintf('PVS_4_%03d', id);
 T2_fs = [FS_path '/' subject '/mri/T2.prenorm.mgz'];
