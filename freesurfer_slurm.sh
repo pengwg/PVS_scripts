@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --array=1-140
+#SBATCH --array=2-140%16
 #SBATCH --partition=defq
 #SBATCH --ntasks=1                   
 #SBATCH --cpus-per-task=20       
@@ -15,6 +15,9 @@ T2_VOL=$(find $DATA_PATH/ -type f \( -name "PVS_${FILE_ID}_T2_SPACE_AX*" -o -nam
 
 echo "recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -s PVS_$FILE_ID"
 srun recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -s PVS_$FILE_ID
+
+# Rerun synthmorph
+# fs-synthmorph-reg --s PVS_$FILE_ID --threads 20 --i $SUBJECTS_DIR/PVS_$FILE_ID/mri/orig.mgz --test --force
 
 # Rerun with T2
 # srun recon-all -all -hires -parallel -cw256 -openmp 20 -T2 $T2_VOL -s PVS_$FILE_ID
