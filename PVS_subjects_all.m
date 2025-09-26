@@ -2,10 +2,10 @@ clear
 
 p = gcp('nocreate');
 if isempty(p)
-    parpool(12);
+    parpool(16);
 end
 
-parfor n = 1 : 140
+parfor n = 2 : 140
     PVS_subject(n)
 end
 
@@ -18,12 +18,6 @@ function PVS_subject(id)
 addpath('filters/frangi_filter_version2a/')
 addpath('matlab_auxiliary/')
 
-data_path = '/projects/2024-11_Perivascular_Space/PVS_B1_Analysis';
-
-FS_path = [data_path '/FS'];
-out_path = [data_path '/Frangi_pruned'];
-lst_path = [data_path '/LST'];
-
 Options.BlackWhite = false;
 Options.FrangiScaleRange = [0.5 3.5];
 Options.FrangiScaleRatio = 0.5;
@@ -31,22 +25,27 @@ Options.FrangiC = 60;
 threshold = 4e-3;
 
 subject = sprintf('PVS_%03d', id);
-T2_fs = [FS_path '/' subject '/mri/T2.prenorm.mgz'];
-T2_nii = [FS_path '/' subject '/mri/T2.prenorm.nii'];
-seg_fs = [FS_path '/' subject '/mri/aparc+aseg.mgz'];
-seg_nii = [FS_path '/' subject '/mri/aparc+aseg.nii'];
 
-if exist(T2_fs, 'file') ~= 2
+data_path = '/projects/2024-11_Perivascular_Space/PVS_B1_Analysis';
+out_path = [data_path '/Frangi_pruned/' subject];
+
+T2_nii = [out_path '/T2_iso.nii.gz'];
+seg_nii = [out_path '/aseg.nii.gz'];
+lst_nii = [data_path '/LST/' subject '/space-flair_seg-lst.nii.gz'];
+
+if exist(T2_nii, 'file') ~= 2
     return
 end
 
-if exist(T2_nii, 'file') ~= 2
-    system(['mri_convert ' T2_fs ' ' T2_nii]);
+if exist(seg_nii, 'file') ~= 2
+    return
 end
 
-if exist(seg_nii, 'file') ~= 2
-    system(['mri_convert ' seg_fs ' ' seg_nii]);
+if exist(lst_nii, 'file') ~= 2
+    return
 end
+
+system(['singularity exec -e /cm/shared/containers/ANTs.sif ResampleImageBySpacing 3 ' lst_nii ' ' out_path '/lst.nii.gz 0.4 0.4 0.4 0 0 1'])
 
 disp(['Frangi filter  ' subject '...' ])
 
@@ -63,7 +62,7 @@ else
     % niftiwrite(Scale, [out_path '/' subject '_ScaleC60'], info, 'Compressed',true)
 end
 
-wmh = niftiread([lst_path '/' subject '/space-flair_seg-lst.nii.gz']);
+wmh = niftiread(lst_nii);
 
 seg_vol = niftiread(seg_nii);
 ventricals = ismember(seg_vol, [4, 5, 14, 43, 44]);
