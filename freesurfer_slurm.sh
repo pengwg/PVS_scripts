@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1                   
 #SBATCH --cpus-per-task=20       
 
-DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data1
+DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data2
 export SUBJECTS_DIR=/projects/2024-11_Perivascular_Space/PVS_B2_Analysis/FS
 
 FILE_ID=$(printf "%03d" $SLURM_ARRAY_TASK_ID)
@@ -15,6 +15,9 @@ T2_VOL=$(find $DATA_PATH/ -type f \( -name "PVS_${FILE_ID}_T2_SPACE_AX*" -o -nam
 
 echo "recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -s PVS_$FILE_ID"
 srun recon-all -all -hires -parallel -cw256 -openmp 20 -i $T1_VOL -T2 $T2_VOL -s PVS_$FILE_ID
+
+# Rerun synthmorph
+# fs-synthmorph-reg --s PVS_$FILE_ID --threads 20 --i $SUBJECTS_DIR/PVS_$FILE_ID/mri/orig.mgz --test --force
 
 # Rerun with T2
 # srun recon-all -all -hires -parallel -cw256 -openmp 20 -T2 $T2_VOL -s PVS_$FILE_ID
