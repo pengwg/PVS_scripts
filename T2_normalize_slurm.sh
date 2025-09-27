@@ -17,7 +17,7 @@ if ! [ -d $OUTPUT_DIR ]; then
     mkdir $OUTPUT_DIR
 fi
 
-T2_VOL=$(find $DATA_PATH/ -type f \( -name "PVS_${FILE_ID}_T2_SPACE_AX*" -o -name "PVS_${FILE_ID}_T2_SPACE_SAG*" \) | head -n 1)
+T2_VOL=$(find $DATA_PATH/ -type f \( -name "PVS_2_${FILE_ID}_T2_SPACE_AX*" -o -name "PVS_2_${FILE_ID}_T2_SPACE_SAG*" \) | head -n 1)
 
 mri_convert $FS_MRI_DIR/aseg.mgz $OUTPUT_DIR/aseg.nii.gz
 
