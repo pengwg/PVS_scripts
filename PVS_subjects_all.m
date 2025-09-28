@@ -2,7 +2,7 @@ clear
 
 p = gcp('nocreate');
 if isempty(p)
-    parpool(12);
+    parpool(16);
 end
 
 parfor n = 1 : 45
@@ -18,35 +18,34 @@ function PVS_subject(id)
 addpath('filters/frangi_filter_version2a/')
 addpath('matlab_auxiliary/')
 
-data_path = '/projects/2024-11_Perivascular_Space/PVS_B4_Analysis';
-
-FS_path = [data_path '/FS'];
-out_path = [data_path '/Frangi_pruned'];
-lst_path = [data_path '/LST'];
-
+rerun_frangi = true;
 Options.BlackWhite = false;
-Options.FrangiScaleRange = [0.5 3.5];
+Options.FrangiScaleRange = [0.5 4];
 Options.FrangiScaleRatio = 0.5;
 Options.FrangiC = 60;
-threshold = 4e-3;
+threshold = 5e-3;
 
 subject = sprintf('PVS_4_%03d', id);
-T2_fs = [FS_path '/' subject '/mri/T2.prenorm.mgz'];
-T2_nii = [FS_path '/' subject '/mri/T2.prenorm.nii'];
-seg_fs = [FS_path '/' subject '/mri/aparc+aseg.mgz'];
-seg_nii = [FS_path '/' subject '/mri/aparc+aseg.nii'];
+data_path = '/projects/2024-11_Perivascular_Space/PVS_B4_Analysis';
+out_path = [data_path '/Frangi_pruned/' subject];
 
-if exist(T2_fs, 'file') ~= 2
+T2_nii = [out_path '/T2_iso.nii.gz'];
+seg_nii = [out_path '/aseg.nii.gz'];
+lst_nii = [data_path '/LST/' subject '/space-flair_seg-lst.nii.gz'];
+
+if exist(T2_nii, 'file') ~= 2
     return
 end
 
-if exist(T2_nii, 'file') ~= 2
-    system(['mri_convert ' T2_fs ' ' T2_nii]);
+if exist(seg_nii, 'file') ~= 2
+    return
 end
 
-if exist(seg_nii, 'file') ~= 2
-    system(['mri_convert ' seg_fs ' ' seg_nii]);
+if exist(lst_nii, 'file') ~= 2
+    return
 end
+
+system(['singularity exec -e /cm/shared/containers/ANTs.sif ResampleImageBySpacing 3 ' lst_nii ' ' out_path '/lst.nii.gz 0.4 0.4 0.4 0 0 1'])
 
 disp(['Frangi filter  ' subject '...' ])
 
@@ -55,15 +54,16 @@ T2_vol = niftiread(info);
 
 out_name = [out_path '/' subject '_vesselness'];
 
-if exist([out_name, '.nii.gz'], 'file') == 2
-    vessleness = niftiread([out_name, '.nii.gz']);
-else
+if rerun_frangi || exist([out_name, '.nii.gz'], 'file') ~= 2
     [vessleness,Scale,~,~,~] = FrangiFilter3D(T2_vol, Options);
     niftiwrite(vessleness, out_name, info, 'Compressed',true)
     % niftiwrite(Scale, [out_path '/' subject '_ScaleC60'], info, 'Compressed',true)
+    
+else
+    vessleness = niftiread([out_name, '.nii.gz']);
 end
 
-wmh = niftiread([lst_path '/' subject '/space-flair_seg-lst.nii.gz']);
+wmh = niftiread(lst_nii);
 
 seg_vol = niftiread(seg_nii);
 ventricals = ismember(seg_vol, [4, 5, 14, 43, 44]);
@@ -118,7 +118,7 @@ end
 function vesslemap_pruned = PVS_segment(vesslemap, T2)
 
 minVol = 6;
-maxVol = 200;
+maxVol = 400;
 
 % -------------------------------------------------------------------
 %  The following was added for separating the clustered PVS in BG

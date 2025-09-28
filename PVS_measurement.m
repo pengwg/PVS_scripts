@@ -8,23 +8,22 @@ data_path = '/projects/2024-11_Perivascular_Space/PVS_B4_Analysis';
 
 PVS_path = [data_path '/Frangi_pruned'];
 FS_path = [data_path '/FS'];
-LST_path = [data_path '/LST'];
 
-PVS_measure_region('wmbg', PVS_path, FS_path, LST_path)
-PVS_measure_region('nawmbg', PVS_path, FS_path, LST_path)
-PVS_measure_region('wm', PVS_path, FS_path, LST_path)
-PVS_measure_region('nawm', PVS_path, FS_path, LST_path)
-PVS_measure_region('bg', PVS_path, FS_path, LST_path)
+PVS_measure_region('wmbg', PVS_path, FS_path)
+PVS_measure_region('nawmbg', PVS_path, FS_path)
+PVS_measure_region('wm', PVS_path, FS_path)
+PVS_measure_region('nawm', PVS_path, FS_path)
+PVS_measure_region('bg', PVS_path, FS_path)
 
 return
 
 
-function PVS_measure_region(region, PVS_path, FS_path, LST_path)
+function PVS_measure_region(region, PVS_path, FS_path)
 
 numSubjects = 45;
 
 stats = zeros(numSubjects, 15);
-number = zeros(numSubjects, 1);
+numPVS = zeros(numSubjects, 1);
 pvsTotalVol = zeros(numSubjects, 1);
 maskVol = zeros(numSubjects, 1);
 eTIV = zeros(numSubjects, 1);
@@ -37,32 +36,26 @@ numPVSTotalVolGT100 = zeros(numSubjects, 1);
 
 p = gcp('nocreate');
 if isempty(p)
-    parpool(12);
+   parpool(16);
 end
 
 parfor n = 1 : numSubjects
-    subject = sprintf('PVS_4_%03d_vsmask_%s.nii.gz', n, region);
-    pvs_mask_file = [PVS_path '/' subject];
+    subject = sprintf('PVS_4_%03d', n);
+    pvs_mask_file = sprintf('%s/%s/PVS_4_%03d_vsmask_%s.nii.gz', PVS_path, subject, n, region);
 
     if exist(pvs_mask_file, 'file') ~= 2
         continue
     end
 
-    disp(['Measure ' subject '...' ])
+    disp(['Measure ' subject ' ' region '...' ])
 
     brain_fs = sprintf('%s/PVS_4_%03d/mri/brainmask.mgz', FS_path, n);
     brain_nii = sprintf('%s/PVS_4_%03d/mri/brainmask.nii.gz', FS_path, n);
-    aseg_fs = sprintf('%s/PVS_4_%03d/mri/aseg.mgz', FS_path, n);
-    aseg_nii = sprintf('%s/PVS_4_%03d/mri/aseg.nii.gz', FS_path, n);
     aseg_stats = sprintf('%s/PVS_4_%03d/stats/aseg.stats', FS_path, n);
-    % disp(brain_nii)
-    
+    aseg_nii = [PVS_path '/' subject '/aseg.nii.gz'];
+   
     if exist(brain_nii, 'file') ~= 2
         system(['mri_convert ' brain_fs ' ' brain_nii]);
-    end
-
-    if exist(aseg_nii, 'file') ~= 2
-        system(['mri_convert ' aseg_fs ' ' aseg_nii]);
     end
 
     info = niftiinfo(brain_nii);
@@ -73,7 +66,9 @@ parfor n = 1 : numSubjects
     aseg_vol = niftiread(aseg_nii);
     bgVol(n) = nnz(ismember(aseg_vol, [11, 12, 13, 26, 50, 51, 52, 58])) * prod(info.PixelDimensions);
     
-	wmh = niftiread(sprintf('%s/PVS_4_%03d/space-flair_seg-lst.nii.gz', LST_path, n));
+    info = niftiinfo([PVS_path '/' subject '/lst.nii.gz']);
+	wmh = niftiread(info);
+	
 	wm_mask = ismember(aseg_vol, [2, 41]);
     wmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
 	wm_mask(logical(wmh)) = 0;
@@ -85,7 +80,7 @@ parfor n = 1 : numSubjects
     [stats_subject, measure_all] = measurePVSstats(pvs_mask_vol, info.PixelDimensions);
 
     stats(n, :) = stats_subject';
-    number(n) = size(measure_all, 1);
+    numPVS(n) = size(measure_all, 1);
     
     if isempty(measure_all) 
         continue
@@ -99,7 +94,7 @@ parfor n = 1 : numSubjects
     pvsTotalVolGT100(n) = sum(volume(volume>100));
     numPVSTotalVolGT100(n) = sum(volume>100);
 
-    writetable(table(length, width, volume), sprintf('subjects_stats/PVS4_%03d_%s.xlsx', n, region));
+    writetable(table(length, width, volume), sprintf('%s/%s/PVS4_%03d_%s.xlsx', PVS_path, subject, n, region), 'WriteMode', 'replacefile');
 end
 
 lengthMean = stats(:, 1);
@@ -121,12 +116,12 @@ volPrc25 = stats(:, 14);
 volPrc75 = stats(:, 15);
 subjectID = (1 : numSubjects)';
 
-T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, number, pvsTotalVolGT100, numPVSTotalVolGT100, ...
+T = table(subjectID, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, numPVS, pvsTotalVolGT100, numPVSTotalVolGT100, ...
           lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           volMean, volMedian, volStd, volPrc25, volPrc75);
 
-writetable(T, ['PVS4_stats_' region, '.xlsx'])
+writetable(T, [PVS_path '/PVS4_stats_' region, '.xlsx'], 'WriteMode', 'replacefile')
 
 end
 
