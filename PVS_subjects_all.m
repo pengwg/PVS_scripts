@@ -64,7 +64,7 @@ else
     vessleness = niftiread([out_name, '.nii.gz']);
 end
 
-wmh = niftiread(lst_nii);
+wmh = niftiread([out_path '/lst.nii.gz']);
 
 seg_vol = niftiread(seg_nii);
 ventricals = ismember(seg_vol, [4, 5, 14, 43, 44]);
