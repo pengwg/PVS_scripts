@@ -18,7 +18,7 @@ function PVS_subject(id)
 addpath('filters/frangi_filter_version2a/')
 addpath('matlab_auxiliary/')
 
-rerun_frangi = true;
+rerun_frangi = false;
 Options.BlackWhite = false;
 Options.FrangiScaleRange = [0.5 4];
 Options.FrangiScaleRatio = 0.5;
@@ -32,6 +32,7 @@ out_path = [data_path '/Frangi_pruned/' subject];
 
 T2_nii = [out_path '/T2_iso.nii.gz'];
 seg_nii = [out_path '/aseg.nii.gz'];
+cso_nii = [out_path '/cso_mask_native.nii.gz'];
 lst_nii = [data_path '/LST/' subject '/space-flair_seg-lst.nii.gz'];
 
 if exist(T2_nii, 'file') ~= 2
@@ -46,9 +47,8 @@ if exist(lst_nii, 'file') ~= 2
     return
 end
 
+disp(['Resample LST  ' subject '...' ])
 system(['singularity exec -e /cm/shared/containers/ANTs.sif ResampleImageBySpacing 3 ' lst_nii ' ' out_path '/lst.nii.gz 0.4 0.4 0.4 0 0 1'])
-
-disp(['Frangi filter  ' subject '...' ])
 
 info = niftiinfo(T2_nii);
 T2_vol = niftiread(info);
@@ -56,6 +56,7 @@ T2_vol = niftiread(info);
 out_name = [out_path '/' subject '_vesselness'];
 
 if rerun_frangi || exist([out_name, '.nii.gz'], 'file') ~= 2
+    disp(['Frangi filter  ' subject '...' ])
     [vessleness,Scale,~,~,~] = FrangiFilter3D(T2_vol, Options);
     niftiwrite(vessleness, out_name, info, 'Compressed',true)
     % niftiwrite(Scale, [out_path '/' subject '_ScaleC60'], info, 'Compressed',true)
@@ -92,6 +93,14 @@ wm_mask = ismember(seg_vol, [2, 41]);
 vesselmap_wm = vesselmap_wmbg_seg;
 vesselmap_wm(~logical(wm_mask)) = 0;
 niftiwrite(vesselmap_wm, [out_path '/' subject '_vsmask_wm'], info, 'Compressed',true)
+
+cso_mask = niftiread(cso_nii);
+vesselmap_cso = vesselmap_wm;
+vesselmap_cso(~logical(cso_mask)) = 0;
+niftiwrite(vesselmap_cso, [out_path '/' subject '_vsmask_cso'], info, 'Compressed',true)
+
+vesselmap_cso(logical(wmh)) = 0;
+niftiwrite(vesselmap_cso, [out_path '/' subject '_vsmask_nacso'], info, 'Compressed',true)
 
 vesselmap_wm(logical(wmh)) = 0;
 niftiwrite(vesselmap_wm, [out_path '/' subject '_vsmask_nawm'], info, 'Compressed',true)

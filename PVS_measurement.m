@@ -13,6 +13,8 @@ PVS_measure_region('nawmbg', PVS_path, FS_path)
 PVS_measure_region('wm', PVS_path, FS_path)
 PVS_measure_region('nawm', PVS_path, FS_path)
 PVS_measure_region('bg', PVS_path, FS_path)
+PVS_measure_region('cso', PVS_path, FS_path)
+PVS_measure_region('nacso', PVS_path, FS_path)
 
 return
 
