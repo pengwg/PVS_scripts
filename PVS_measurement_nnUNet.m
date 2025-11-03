@@ -30,8 +30,8 @@ numPVS = zeros(total_num_subjects, 1);
 pvsTotalVol = zeros(total_num_subjects, 1);
 maskVol = zeros(total_num_subjects, 1);
 eTIV = zeros(total_num_subjects, 1);
-bgVol = zeros(total_num_subjects, 1);
 wmVol = zeros(total_num_subjects, 1);
+csoVol =zeros(total_num_subjects, 1);
 
 group_i0 = 0;
 for k = 1 : length(num_subjects)
@@ -57,6 +57,7 @@ for k = 1 : length(num_subjects)
         brain_nii = [FS_path '/' subject '/mri/brainmask.nii.gz'];
         aseg_stats = [FS_path '/' subject '/stats/aseg.stats'];
         aseg_nii = [data_path_analysis '/' subject '/aseg_T2.nii.gz'];
+        cso_nii = [data_path_analysis '/' subject '/cso_mask_T2.nii.gz'];
 
         if exist(aseg_stats, 'file') ~= 2
             disp([subject ' aseg.stats not found!'])
@@ -77,16 +78,19 @@ for k = 1 : length(num_subjects)
         maskVol(n) = nnz(brain > 0) * prod(info.PixelDimensions);
         eTIV(n) = get_eTIV(aseg_stats);
 
-        aseg_vol = niftiread(aseg_nii);
+        info = niftiinfo(aseg_nii);
+        aseg_vol = niftiread(info);
         wm_mask = ismember(aseg_vol, [2, 41]);
         wmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
-
+        
+        cso_mask = niftiread(cso_nii);
+        csoVol(n) = nnz(wm_mask(logical(cso_mask))) * prod(info.PixelDimensions);
+        
         info = niftiinfo(pvs_mask_file);
         pvs_mask_vol = niftiread(info);
 
         if strcmp(region, 'cso')
-            cso_mask_vol = niftiread(fullfile(data_path_analysis, subject, 'cso_mask_T2.nii.gz'));
-            pvs_mask_vol(~logical(cso_mask_vol)) = 0;
+            pvs_mask_vol(~logical(cso_mask)) = 0;
         end
         
         [stats_subject, measure_all] = measurePVSstats(pvs_mask_vol, info.PixelDimensions);
@@ -127,7 +131,7 @@ volStd = stats(:, 13);
 volPrc25 = stats(:, 14);
 volPrc75 = stats(:, 15);
 
-T = table(subjectIDs, eTIV, maskVol, bgVol, wmVol, pvsTotalVol, numPVS, ...
+T = table(subjectIDs, eTIV, maskVol, wmVol, csoVol, pvsTotalVol, numPVS, ...
           lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           volMean, volMedian, volStd, volPrc25, volPrc75);

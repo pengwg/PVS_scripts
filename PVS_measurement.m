@@ -36,6 +36,7 @@ eTIV = zeros(total_num_subjects, 1);
 bgVol = zeros(total_num_subjects, 1);
 wmVol = zeros(total_num_subjects, 1);
 nawmVol = zeros(total_num_subjects, 1);
+csoVol = zeros(total_num_subjects, 1);
 
 pvsTotalVolGT100 = zeros(total_num_subjects, 1);
 numPVSTotalVolGT100 = zeros(total_num_subjects, 1);
@@ -62,7 +63,8 @@ for k = 1 : length(num_subjects)
         brain_fs = [FS_path '/' subject '/mri/brainmask.mgz'];
         brain_nii = [FS_path '/' subject '/mri/brainmask.nii.gz'];
         aseg_stats = [FS_path '/' subject '/stats/aseg.stats'];
-        aseg_nii = [PVS_path '/' subject '/aseg.nii.gz'];
+        aseg_nii = [PVS_path '/' subject '/aseg_iso.nii.gz'];
+        cso_nii = [PVS_path '/' subject '/cso_mask_iso.nii.gz'];
 
         if exist(brain_nii, 'file') ~= 2
             system(['mri_convert ' brain_fs ' ' brain_nii]);
@@ -80,6 +82,10 @@ for k = 1 : length(num_subjects)
         	wmh = niftiread(info);
     	    wm_mask = ismember(aseg_vol, [2, 41]);
         wmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
+        
+        cso_mask = niftiread(cso_nii);
+        csoVol(n) = nnz(wm_mask(logical(cso_mask))) * prod(info.PixelDimensions);
+        
      	wm_mask(logical(wmh)) = 0;
         	nawmVol(n) = nnz(wm_mask) * prod(info.PixelDimensions);
 
@@ -127,7 +133,7 @@ volStd = stats(:, 13);
 volPrc25 = stats(:, 14);
 volPrc75 = stats(:, 15);
 
-T = table(subjectIDs, eTIV, maskVol, bgVol, wmVol, nawmVol, pvsTotalVol, numPVS, pvsTotalVolGT100, numPVSTotalVolGT100, ...
+T = table(subjectIDs, eTIV, maskVol, bgVol, wmVol, nawmVol, csoVol, pvsTotalVol, numPVS, pvsTotalVolGT100, numPVSTotalVolGT100, ...
           lengthMean, lengthMedian, lengthStd, lengthPrc25, lengthPrc75, ...
           widthMean, widthMedian, widthStd, widthPrc25, widthPrc75, ...
           volMean, volMedian, volStd, volPrc25, volPrc75);
