@@ -29,9 +29,9 @@ subject = sprintf('PVS_4_%03d', id);
 data_path = '/projects/2024-11_Perivascular_Space/PVS_B4_Analysis';
 out_path = [data_path '/Frangi_pruned/' subject];
 
-T2_nii = [out_path '/T2_iso.nii.gz'];
-seg_nii = [out_path '/aseg.nii.gz'];
-cso_nii = [out_path '/cso_mask_native.nii.gz'];
+T2_nii = [out_path '/T2toT1_iso.nii.gz'];
+seg_nii = [out_path '/aseg_iso.nii.gz'];
+cso_nii = [out_path '/cso_mask_iso.nii.gz'];
 lst_nii = [data_path '/LST/' subject '/space-flair_seg-lst.nii.gz'];
 
 if exist(T2_nii, 'file') ~= 2
