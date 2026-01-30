@@ -37,8 +37,11 @@ fi
 
 # Create aseg and CSO mask in original T2 native space
 if ! [ -f "$OUTPUT_DIR/wmparc_T2.nii.gz" ]; then
-    mri_convert $FS_MRI_DIR/wmparc.mgz $OUTPUT_DIR/wmparc.nii.gz
-    mri_vol2vol --nearest --lta-inv $FS_MRI_DIR/transforms/T2raw.lta --targ $T2_VOL --mov $OUTPUT_DIR/wmparc.nii.gz --o $OUTPUT_DIR/wmparc_T2.nii.gz
+    mri_vol2vol --nearest --lta-inv $FS_MRI_DIR/transforms/T2raw.lta --targ $T2_VOL --mov $OUTPUT_DIR/wmparc.mgz --o $OUTPUT_DIR/wmparc_T2.nii.gz
+fi
+
+if ! [ -f "$OUTPUT_DIR/aseg_T2.nii.gz" ]; then
+    mri_vol2vol --nearest --lta-inv $FS_MRI_DIR/transforms/T2raw.lta --targ $T2_VOL --mov $OUTPUT_DIR/aseg.mgz --o $OUTPUT_DIR/aseg_T2.nii.gz
 fi
 
 if ! [ -f "$OUTPUT_DIR/cso_mask_T2.nii.gz" ]; then
