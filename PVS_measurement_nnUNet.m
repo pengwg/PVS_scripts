@@ -126,18 +126,17 @@ for k = 1 : length(num_subjects)
     group_i0 = group_i0 + num_subjects(k);
 end
 
+save('PVS.mat', 'subjectIDs', 'eTIV', 'vol_brainmask', 'WM', 'CSO', 'Frontal', 'Parietal', 'Occipital', 'Temporal');
 
-T = table(subjectIDs, eTIV, vol_brainmask, ...
-            [WM.Vol]', [WM.numPVS]', [WM.pvsVol]', [WM.pvsVolMean]', [WM.pvsVolMedian]', [WM.lengthMean]', [WM.lengthMedian]', [WM.widthMean]', [WM.widthMedian]', ...
-            [CSO.Vol]', [CSO.numPVS]', [CSO.pvsVol]', [CSO.pvsVolMean]', [CSO.pvsVolMedian]', [CSO.lengthMean]', [CSO.lengthMedian]', [CSO.widthMean]', [CSO.widthMedian]', ...
-            [Frontal.Vol]', [Frontal.numPVS]', [Frontal.pvsVol]', [Frontal.pvsVolMean]', [Frontal.pvsVolMedian]', [Frontal.lengthMean]', [Frontal.lengthMedian]', [Frontal.widthMean]', [Frontal.widthMedian]', ...
-            [Parietal.Vol]', [Parietal.numPVS]', [Parietal.pvsVol]', [Parietal.pvsVolMean]', [Parietal.pvsVolMedian]', [Parietal.lengthMean]', [Parietal.lengthMedian]', [Parietal.widthMean]', [Parietal.widthMedian]', ...
-            [Occipital.Vol]', [Occipital.numPVS]', [Occipital.pvsVol]', [Occipital.pvsVolMean]', [Occipital.pvsVolMedian]', [Occipital.lengthMean]', [Occipital.lengthMedian]', [Occipital.widthMean]', [Occipital.widthMedian]', ...
-            [Temporal.Vol]', [Temporal.numPVS]', [Temporal.pvsVol]', [Temporal.pvsVolMean]', [Temporal.pvsVolMedian]', [Temporal.lengthMean]', [Temporal.lengthMedian]', [Temporal.widthMean]', [Temporal.widthMedian]');
-
-writetable(T, 'PVS_stats_nnUNet_Jan31.xlsx', 'WriteMode', 'replacefile')
+export_stats(subjectIDs, eTIV, vol_brainmask, WM, 'Whole WM')
+export_stats(subjectIDs, eTIV, vol_brainmask, CSO, 'CSO')
+export_stats(subjectIDs, eTIV, vol_brainmask, Frontal, 'Frontal WM')
+export_stats(subjectIDs, eTIV, vol_brainmask, Parietal, 'Parietal WM')
+export_stats(subjectIDs, eTIV, vol_brainmask, Occipital, 'Occipital WM')
+export_stats(subjectIDs, eTIV, vol_brainmask, Temporal, 'Temporal WM')
 
 end
+
 
 %%
 function eTIV = get_eTIV(stats_file)
@@ -167,12 +166,11 @@ function [structure_stats] = measurePVS(pvs_vol, structure_mask, pixelDimensions
 
 structure_stats = struct('Vol', 0, 'numPVS', 0, 'pvsVol', 0, 'pvsVolMean', 0, 'pvsVolMedian', 0, ...
                          'lengthMean', 0, 'lengthMedian', 0, 'widthMean', 0, 'widthMedian', 0);
-
+                         
 [stats, measure_all] = measurePVSstats(pvs_vol.*uint8(structure_mask), pixelDimensions);
+structure_stats.Vol = nnz(structure_mask) * prod(pixelDimensions);
 
-if ~isempty(measure_all)
-    structure_stats.Vol = nnz(structure_mask) * prod(pixelDimensions);
-    
+if ~isempty(measure_all)    
     structure_stats.numPVS = size(measure_all, 1);
     structure_stats.pvsVol = sum(measure_all(:, 3));
 
