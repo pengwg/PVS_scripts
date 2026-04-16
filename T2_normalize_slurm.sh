@@ -1,15 +1,15 @@
 #!/usr/bin/bash
-#SBATCH --array=1-9
+#SBATCH --array=1-64%15
 #SBATCH --partition=defq
 #SBATCH --ntasks=1                   
 #SBATCH --cpus-per-task=4
 #SBATCH --output=log/%x_%A_%a.out
 
 cores=4
-DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data6
-FILE_ID=$(printf "PVS_6_%03d" $SLURM_ARRAY_TASK_ID)
-FS_MRI_DIR=/projects/2024-11_Perivascular_Space/PVS_B6_Analysis/FS/${FILE_ID}/mri
-OUTPUT_DIR=/projects/2024-11_Perivascular_Space/PVS_B6_Analysis/${FILE_ID}
+DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data5
+FILE_ID=$(printf "PVS_5_%03d" $SLURM_ARRAY_TASK_ID)
+FS_MRI_DIR=/projects/2024-11_Perivascular_Space/PVS_B5_Analysis/FS/${FILE_ID}/mri
+OUTPUT_DIR=/projects/2024-11_Perivascular_Space/PVS_B5_Analysis/${FILE_ID}
 
 mkdir -p $OUTPUT_DIR
 
@@ -37,6 +37,10 @@ fi
 # Create wmparc and CSO mask in original T2 native space
 if ! [ -f "$OUTPUT_DIR/wmparc_T2.nii.gz" ]; then
     mri_vol2vol --nearest --lta-inv $OUTPUT_DIR/T2toT1.lta --targ $T2_VOL --mov $FS_MRI_DIR/wmparc.mgz --o $OUTPUT_DIR/wmparc_T2.nii.gz
+fi
+
+if ! [ -f "$OUTPUT_DIR/aseg_T2.nii.gz" ]; then
+    mri_vol2vol --nearest --lta-inv $OUTPUT_DIR/T2toT1.lta --targ $T2_VOL --mov $FS_MRI_DIR/aseg.mgz --o $OUTPUT_DIR/aseg_T2.nii.gz
 fi
 
 if ! [ -f "$OUTPUT_DIR/cso_mask_T2.nii.gz" ]; then
