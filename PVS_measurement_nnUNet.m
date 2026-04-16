@@ -4,12 +4,14 @@ addpath('matlab_auxiliary/')
 
 data_path = {'/projects/2024-11_Perivascular_Space/PVS_B1_Analysis', ...
              '/projects/2024-11_Perivascular_Space/PVS_B2_Analysis', ...
-             '/projects/2024-11_Perivascular_Space/PVS_B4_Analysis'};
+             '/projects/2024-11_Perivascular_Space/PVS_B4_Analysis', ...
+             '/projects/2024-11_Perivascular_Space/PVS_B5_Analysis', ...
+             '/projects/2024-11_Perivascular_Space/PVS_B6_Analysis'};
 
 PVS_path = '/home/pw0032/Data/nnUNet_data/inference_out_0.4/T2_SPACE';
 
-num_subjects = [140, 54, 45];
-batch_id_spec = {'PVS_%03d', 'PVS_2_%03d', 'PVS_4_%03d'};
+num_subjects = [140, 54, 45, 64, 9];
+batch_id_spec = {'PVS_%03d', 'PVS_2_%03d', 'PVS_4_%03d', 'PVS_5_%03d', 'PVS_6_%03d'};
 
 p = gcp('nocreate');
 if isempty(p)
@@ -49,7 +51,7 @@ temporal_labels = [3001 3006 3007 3009 3015 3016 3030 3033 3034 ...
 group_i0 = 0;
 for k = 1 : length(num_subjects)
     FS_path = [data_path{k} '/FS'];
-    data_path_analysis = [data_path{k} '/Frangi_pruned'];
+    data_path_analysis = data_path{k};
     batch_id_spec_now = batch_id_spec{k};
 
     parfor n = group_i0 + 1 : group_i0 + num_subjects(k)
@@ -124,9 +126,8 @@ for k = 1 : length(num_subjects)
         Temporal(n) = measurePVS(pvs_mask_vol, temporal_mask, info.PixelDimensions);
     end
     group_i0 = group_i0 + num_subjects(k);
+    save('stats_all/PVS.mat', 'subjectIDs', 'eTIV', 'vol_brainmask', 'WM', 'CSO', 'Frontal', 'Parietal', 'Occipital', 'Temporal');
 end
-
-save('PVS.mat', 'subjectIDs', 'eTIV', 'vol_brainmask', 'WM', 'CSO', 'Frontal', 'Parietal', 'Occipital', 'Temporal');
 
 export_stats(subjectIDs, eTIV, vol_brainmask, WM, 'Whole WM')
 export_stats(subjectIDs, eTIV, vol_brainmask, CSO, 'CSO')
