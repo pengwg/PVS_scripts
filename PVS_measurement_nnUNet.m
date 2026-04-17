@@ -85,6 +85,11 @@ for k = 1 : length(num_subjects)
             continue
         end
         
+        if exist(cso_nii, 'file') ~= 2
+            disp([subject ' cso mask not found!'])
+            continue
+        end
+        
         if exist(brain_nii, 'file') ~= 2
             system(['mri_convert ' brain_fs ' ' brain_nii]);
         end
