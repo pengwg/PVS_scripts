@@ -4,12 +4,12 @@
 #SBATCH --ntasks=1                   
 #SBATCH --cpus-per-task=4
 #SBATCH --output=log/%x_%A_%a.out
-SLURM_ARRAY_TASK_ID=96
+SLURM_ARRAY_TASK_ID=43
 cores=4
-DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data1
-FILE_ID=$(printf "PVS_%03d" $SLURM_ARRAY_TASK_ID)
-FS_MRI_DIR=/projects/2024-11_Perivascular_Space/PVS_B1_Analysis/FS/${FILE_ID}/mri
-OUTPUT_DIR=/projects/2024-11_Perivascular_Space/PVS_B1_Analysis/${FILE_ID}
+DATA_PATH=/projects/2024-11_Perivascular_Space/PVS_Data4
+FILE_ID=$(printf "PVS_4_%03d" $SLURM_ARRAY_TASK_ID)
+FS_MRI_DIR=/projects/2024-11_Perivascular_Space/PVS_B4_Analysis/FS/${FILE_ID}/mri
+OUTPUT_DIR=/projects/2024-11_Perivascular_Space/PVS_B4_Analysis/${FILE_ID}
 
 mkdir -p $OUTPUT_DIR
 
