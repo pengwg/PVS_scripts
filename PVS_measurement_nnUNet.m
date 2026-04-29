@@ -57,7 +57,22 @@ for k = 1 : length(num_subjects)
     parfor n = group_i0 + 1 : group_i0 + num_subjects(k)
         subject = sprintf(batch_id_spec_now, n - group_i0);
         subjectIDs{n, 1} = subject;
-
+        
+        if exist([data_path_analysis '/' subject '/PVS.mat'], 'file') == 2
+            disp([subject ' load stats from previous PVS.mat'])
+            load([data_path_analysis '/' subject '/PVS.mat'])
+            
+            vol_brainmask(n) = vbmask;
+            eTIV(n) = etiv;
+            WM(n) = wm;
+            CSO(n) = cso;       
+            Frontal(n) = frontal;
+            Parietal(n) = parietal;
+            Occipital(n) = occipital;
+            Temporal(n) = temporal;
+            continue
+        end
+        
         pvs_files = dir(fullfile(PVS_path, [subject '*.nii.gz']));
         
         if isempty(pvs_files)
@@ -96,8 +111,8 @@ for k = 1 : length(num_subjects)
 
         info = niftiinfo(brain_nii);
         brain = niftiread(info);
-        vol_brainmask(n) = nnz(brain > 0) * prod(info.PixelDimensions);
-        eTIV(n) = get_eTIV(aseg_stats);
+        vbmask = nnz(brain > 0) * prod(info.PixelDimensions);
+        etiv = get_eTIV(aseg_stats);
 
         info = niftiinfo(aseg_nii);
         aseg_vol = niftiread(info);
@@ -123,15 +138,25 @@ for k = 1 : length(num_subjects)
         pvsVolume = measure_all(:, 3);
         writetable(table(pvsLength, pvsWidth, pvsVolume), sprintf('%s/%s/PVS%d_%03d_wm_nnUNet.xlsx', data_path_analysis, subject, k, n), 'WriteMode', 'replacefile');
 
-        WM(n) = measurePVS(pvs_mask_vol, wm_mask, info.PixelDimensions);
-        CSO(n) = measurePVS(pvs_mask_vol, cso_mask, info.PixelDimensions);       
-        Frontal(n) = measurePVS(pvs_mask_vol, frontal_mask, info.PixelDimensions);
-        Parietal(n) = measurePVS(pvs_mask_vol, parietal_mask, info.PixelDimensions);
-        Occipital(n) = measurePVS(pvs_mask_vol, occipital_mask, info.PixelDimensions);
-        Temporal(n) = measurePVS(pvs_mask_vol, temporal_mask, info.PixelDimensions);
+        wm = measurePVS(pvs_mask_vol, wm_mask, info.PixelDimensions);
+        cso = measurePVS(pvs_mask_vol, cso_mask, info.PixelDimensions);       
+        frontal = measurePVS(pvs_mask_vol, frontal_mask, info.PixelDimensions);
+        parietal = measurePVS(pvs_mask_vol, parietal_mask, info.PixelDimensions);
+        occipital = measurePVS(pvs_mask_vol, occipital_mask, info.PixelDimensions);
+        temporal = measurePVS(pvs_mask_vol, temporal_mask, info.PixelDimensions);
+        
+        vol_brainmask(n) = vbmask;
+        eTIV(n) = etiv;
+        WM(n) = wm;
+        CSO(n) = cso;       
+        Frontal(n) = frontal;
+        Parietal(n) = parietal;
+        Occipital(n) = occipital;
+        Temporal(n) = temporal;
+        
+        save([data_path_analysis '/' subject '/PVS.mat'], 'etiv', 'vbmask', 'wm', 'cso', 'frontal', 'parietal', 'occipital', 'temporal');
     end
     group_i0 = group_i0 + num_subjects(k);
-    save('stats_all/PVS.mat', 'subjectIDs', 'eTIV', 'vol_brainmask', 'WM', 'CSO', 'Frontal', 'Parietal', 'Occipital', 'Temporal');
 end
 
 export_stats(subjectIDs, eTIV, vol_brainmask, WM, 'Whole WM')
